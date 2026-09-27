@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  // Aplikasi ini memakai Supabase via backend /api/db — Firestore TIDAK dipakai.
+  // Kunci total agar tidak ada akses langsung dari browser.
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

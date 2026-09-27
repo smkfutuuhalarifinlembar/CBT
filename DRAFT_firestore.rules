@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isRole(roleStr) {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == roleStr;
+    }
+
+    function isAdmin() {
+      return isRole('admin') || (isSignedIn() && request.auth.token.email == 'admin@sekolah.sch.id'); // fallback admin
+    }
+    
+    function isGuru() {
+      return isRole('guru') || isAdmin();
+    }
+
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.keys().hasAll(['id', 'name', 'email', 'role']) &&
+          data.id is string && data.id.size() <= 128 &&
+          data.name is string && data.name.size() <= 128 &&
+          data.email is string && data.email.size() <= 128 &&
+          data.role in ['admin', 'guru', 'siswa'];
+      }
+
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (isAdmin() || request.auth.uid == userId) && isValidId(userId) && isValidUser(incoming());
+      allow update: if isSignedIn() && (isAdmin() || request.auth.uid == userId) && isValidId(userId) && isValidUser(incoming());
+      allow delete: if isAdmin() && isValidId(userId);
+    }
+
+    match /classes/{classId} {
+      function isValidClass(data) {
+        return data.keys().hasAll(['id', 'name', 'grade', 'academicYear', 'studentCount']) &&
+          data.id is string && data.id.size() <= 128 &&
+          data.name is string && data.name.size() <= 128 &&
+          data.grade is string && data.grade.size() <= 128 &&
+          data.academicYear is string && data.academicYear.size() <= 128 &&
+          data.studentCount is number;
+      }
+      allow read: if isSignedIn();
+      allow create: if isAdmin() && isValidId(classId) && isValidClass(incoming());
+      allow update: if isAdmin() && isValidId(classId) && isValidClass(incoming());
+      allow delete: if isAdmin() && isValidId(classId);
+    }
+
+    match /exams/{examId} {
+      function isValidExam(data) {
+        return data.keys().hasAll(['id', 'title', 'subject', 'teacherId', 'status']) &&
+          data.id is string && data.id.size() <= 128 &&
+          data.title is string && data.title.size() <= 256 &&
+          data.subject is string && data.subject.size() <= 128 &&
+          data.teacherId is string && data.teacherId.size() <= 128 &&
+          data.status in ['draft', 'published'];
+      }
+      allow read: if isSignedIn();
+      allow create: if isGuru() && isValidId(examId) && isValidExam(incoming()) && (isAdmin() || incoming().teacherId == request.auth.uid);
+      allow update: if isGuru() && isValidId(examId) && isValidExam(incoming()) && (isAdmin() || existing().teacherId == request.auth.uid);
+      allow delete: if isGuru() && isValidId(examId) && (isAdmin() || existing().teacherId == request.auth.uid);
+    }
+
+    match /submissions/{submissionId} {
+      function isValidSubmission(data) {
+        return data.keys().hasAll(['id', 'examId', 'studentId', 'status']) &&
+          data.id is string && data.id.size() <= 128 &&
+          data.examId is string && data.examId.size() <= 128 &&
+          data.studentId is string && data.studentId.size() <= 128 &&
+          data.status in ['submitted', 'graded'];
+      }
+      // A student can read their own submissions. Teachers can read all.
+      allow read: if isSignedIn(); 
+      allow create: if isSignedIn() && isValidId(submissionId) && isValidSubmission(incoming());
+      allow update: if isSignedIn() && isValidId(submissionId) && isValidSubmission(incoming());
+      allow delete: if isAdmin() && isValidId(submissionId);
+    }
+  }
+}

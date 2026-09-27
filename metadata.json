@@ -1,0 +1,10 @@
+{
+  "name": "Remix Sistem Ujian Essay Online",
+  "description": "Sistem ujian online essay dan uraian dengan penilaian pencocokan kunci jawaban AI, kamera pengawas real-time, dan mode lockdown anti kecurangan.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

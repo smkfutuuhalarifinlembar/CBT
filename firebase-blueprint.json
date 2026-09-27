@@ -1,0 +1,88 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile containing role and school info",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["admin", "guru", "siswa"] },
+        "classId": { "type": "string", "maxLength": 128 },
+        "className": { "type": "string", "maxLength": 128 },
+        "nisn": { "type": "string", "maxLength": 128 },
+        "nip": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "ClassRoom": {
+      "title": "ClassRoom",
+      "description": "Class room definition",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 128 },
+        "grade": { "type": "string", "maxLength": 128 },
+        "academicYear": { "type": "string", "maxLength": 128 },
+        "studentCount": { "type": "number" }
+      },
+      "required": ["id", "name", "grade", "academicYear", "studentCount"]
+    },
+    "Exam": {
+      "title": "Exam",
+      "description": "Exam configuration",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "maxLength": 256 },
+        "subject": { "type": "string", "maxLength": 128 },
+        "targetClassId": { "type": "string", "maxLength": 128 },
+        "targetClassName": { "type": "string", "maxLength": 128 },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "teacherName": { "type": "string", "maxLength": 128 },
+        "examDate": { "type": "string", "maxLength": 64 },
+        "startTime": { "type": "string", "maxLength": 64 },
+        "endTime": { "type": "string", "maxLength": 64 },
+        "durationMinutes": { "type": "number" },
+        "passingGrade": { "type": "number" },
+        "status": { "type": "string", "enum": ["draft", "published"] },
+        "allowCamera": { "type": "boolean" },
+        "lockdownMode": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "title", "subject", "teacherId", "status"]
+    },
+    "ExamSubmission": {
+      "title": "ExamSubmission",
+      "description": "Student's submission for an exam",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "examId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "studentId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "totalScore": { "type": "number" },
+        "status": { "type": "string", "enum": ["submitted", "graded"] }
+      },
+      "required": ["id", "examId", "studentId", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Store all user profiles"
+    },
+    "/classes/{classId}": {
+      "schema": { "$ref": "#/entities/ClassRoom" },
+      "description": "Store all classes"
+    },
+    "/exams/{examId}": {
+      "schema": { "$ref": "#/entities/Exam" },
+      "description": "Store all exams created by teachers"
+    },
+    "/submissions/{submissionId}": {
+      "schema": { "$ref": "#/entities/ExamSubmission" },
+      "description": "Store all student submissions"
+    }
+  }
+}

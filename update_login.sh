@@ -1,0 +1,1 @@
+sed -i 's/const res = storage.login(identifier, password);/storage.login(selectedRoleTab).then((res) => { setIsLoading(false); if (res.success && res.user) { onLoginSuccess(res.user); } else { setErrorMsg(res.error || "Login gagal."); } }); return;/' src/components/auth/Login.tsx

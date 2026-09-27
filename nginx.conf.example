@@ -1,0 +1,55 @@
+# Konfigurasi Nginx untuk Aplikasi Ujian CBT di VPS
+# Simpan di: /etc/nginx/sites-available/cbt-exam
+# Lalu aktifkan: sudo ln -s /etc/nginx/sites-available/cbt-exam /etc/nginx/sites-enabled/
+# Lalu tes & reload: sudo nginx -t && sudo systemctl reload nginx
+
+# Redirect HTTP -> HTTPS (Certbot akan mengelola sertifikat; blok ini aman dibiarkan)
+server {
+    listen 80;
+    server_name ujian.domainanda.com; # Ganti dengan domain/subdomain Anda
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name ujian.domainanda.com; # Ganti dengan domain/subdomain Anda
+
+    # SSL diisi otomatis oleh: sudo certbot --nginx -d ujian.domainanda.com
+    # ssl_certificate ...;
+    # ssl_certificate_key ...;
+
+    # Ukuran payload maksimum (frontend mengirim JSON; 2M sudah cukup)
+    client_max_body_size 2M;
+
+    # Gzip Compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    # Security headers di level edge
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy no-referrer always;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Timeout settings untuk evaluasi AI yang membutuhkan waktu
+        proxy_connect_timeout 30s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 90s;
+    }
+
+    # Blokir file sensitif bila ada yang tersasar ke webroot
+    location ~* (\.env|\.git|node_modules|dist/server) {
+        deny all;
+        return 404;
+    }
+}
